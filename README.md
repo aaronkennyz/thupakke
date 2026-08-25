@@ -8,3 +8,21 @@ Team Details:
     2. Aman Dsilva
     3. Alwisha Sweedal Tauro
     4. Georgie Shibu
+
+
+Project Title: 
+
+Project Objective:
+
+Project Statement:
+
+project Scope:
+
+Team responsibilities:
+
+Selected Programming language:
+
+Initial System Architecture:
+
+Initial development Plan:
+
