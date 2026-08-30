@@ -4,16 +4,16 @@
 **Date submitted:**
 
 ## Planned Work
--
+-Learning Java
 
 ## Completed Work
 - Repository setup
 - Architecture study (MS51FB9AE)
 - Language selection
-- Initial system design / block diagram
+
 
 ## Pending Work
--
+- Initial system design / block diagram
 
 ## Issues Encountered
 -
@@ -23,12 +23,13 @@
 
 ## Individual Contributions
 
-| Student | Contribution |
-|---|---|
-| Team Leader | |
-| Member 2 | |
-| Member 3 | |
-| Member 4 | |
+1. Aaron Kenneth Dsouza
+
+2. Alwisha Tauro
+
+3. Aman Dsilva
+
+4. Georgie Shibu
 
 ## Work Accepted
 -

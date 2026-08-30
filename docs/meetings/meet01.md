@@ -5,8 +5,8 @@
 **Participants:**
 
 ## Agenda
-1.
-2.
+1.Onboarding 
+2.Selecting language
 
 ## Discussion
 -
