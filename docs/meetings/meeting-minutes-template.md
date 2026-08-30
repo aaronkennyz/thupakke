@@ -24,3 +24,7 @@
 ## Next Meeting
 
 ---
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes

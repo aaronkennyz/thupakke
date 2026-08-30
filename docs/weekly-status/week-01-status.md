@@ -7,9 +7,12 @@
 -Learning Java
 
 ## Completed Work
+<<<<<<< Updated upstream
 - Repository setup
 - Architecture study (MS51FB9AE)
 - Language selection
+=======
+>>>>>>> Stashed changes
 
 
 ## Pending Work
