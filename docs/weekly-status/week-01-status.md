@@ -39,7 +39,9 @@ Date submitted: 30 Aug 2026
 
 ## Work Carried Forward to Week 2
 
--
+- Initial system design / block diagram
+
 
 ## Week 2 Plan
--
+-Learning Java 
+- Block Diagram and Architecture study 
