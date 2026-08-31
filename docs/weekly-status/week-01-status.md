@@ -1,18 +1,18 @@
 # Week 1 Status Report
 
-**Team:**
-**Date submitted:**
+Team:Thupakki
+Date submitted: 30 Aug 2026
 
 ## Planned Work
 -Learning Java
 
 ## Completed Work
-<<<<<<< Updated upstream
+
 - Repository setup
 - Architecture study (MS51FB9AE)
 - Language selection
 =======
->>>>>>> Stashed changes
+
 
 
 ## Pending Work
@@ -38,6 +38,7 @@
 -
 
 ## Work Carried Forward to Week 2
+
 -
 
 ## Week 2 Plan
