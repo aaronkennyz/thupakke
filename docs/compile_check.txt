@@ -1,0 +1,15 @@
+javac src: PASS
+javac tests: PASS
+PASS: Memory write/read
+PASS: Stack SP after two PUSH
+PASS: Stack POP is LIFO
+PASS: Queue full condition
+PASS: FIFO first dequeue
+PASS: FIFO second dequeue
+PASS: FIFO wrap-around
+PASS: FIFO wrap-around second value
+PASS: Queue empty condition
+PASS: CPU queue integration
+PASS: Queue retains FIFO order
+
+Passed: 11  Failed: 0
