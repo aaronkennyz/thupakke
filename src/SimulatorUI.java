@@ -7,6 +7,17 @@ public class SimulatorUI extends JFrame {
     private final Simulator simulator = new Simulator();
     private final JTextArea trace = new JTextArea();
     private final JLabel state = new JLabel();
+    private final javax.swing.table.DefaultTableModel memoryModel =
+    new javax.swing.table.DefaultTableModel(
+        new String[]{"Address", "Value"}, 0
+    ) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
+
+private final JTable memoryTable = new JTable(memoryModel);
 
     public SimulatorUI() {
         setTitle("Thupakki - MS51FB9AE Simulator | Week 3");
@@ -26,7 +37,26 @@ public class SimulatorUI extends JFrame {
 
         trace.setEditable(false);
         trace.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        add(new JScrollPane(trace), BorderLayout.CENTER);
+        JPanel center = new JPanel(new GridLayout(1, 2, 8, 8));
+
+JScrollPane traceScroll = new JScrollPane(trace);
+traceScroll.setBorder(
+    BorderFactory.createTitledBorder("Execution Trace")
+);
+
+memoryTable.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+memoryTable.setRowHeight(22);
+memoryTable.getTableHeader().setReorderingAllowed(false);
+
+JScrollPane memoryScroll = new JScrollPane(memoryTable);
+memoryScroll.setBorder(
+    BorderFactory.createTitledBorder("Memory Viewer")
+);
+
+center.add(traceScroll);
+center.add(memoryScroll);
+
+add(center, BorderLayout.CENTER);
         add(state, BorderLayout.SOUTH);
 
         load.addActionListener(e -> { simulator.loadDemo(); refresh("Demo loaded."); });
@@ -35,6 +65,19 @@ public class SimulatorUI extends JFrame {
         step.addActionListener(e -> { simulator.getCPU().step(); refresh(simulator.getCPU().getLastTrace()); });
         run.addActionListener(e -> { simulator.getCPU().run(); refresh(simulator.getCPU().getLastTrace()); });
     }
+ 
+    private void refreshMemoryTable() {
+    memoryModel.setRowCount(0);
+
+    Memory memory = simulator.getCPU().getMemory();
+
+    for (int address = 0; address < memory.size(); address++) {
+        memoryModel.addRow(new Object[]{
+            String.format("%02X", address),
+            String.format("%02X", memory.read(address))
+        });
+    }
+}
 
     private void refresh(String message) {
         CPU c = simulator.getCPU();
@@ -47,6 +90,7 @@ public class SimulatorUI extends JFrame {
         state.setText(String.format("PC=%02X   A=%02X   R0=%02X R1=%02X R2=%02X   Z=%s C=%s   Halted=%s",
             c.getPC(), c.getAccumulator(), c.getRegisters()[0], c.getRegisters()[1],
             c.getRegisters()[2], c.isZeroFlag(), c.isCarryFlag(), c.isHalted()));
+            refreshMemoryTable();
     }
 
     public static void main(String[] args) {
