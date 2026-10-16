@@ -1,53 +1,62 @@
-## thupakki
-PBL repository for Team Thupakki
- Microconroller: Nuvoton ms51fb9ae
+# Thupakki — Week 3 Simulator
 
-# Team : 
-Thupakki 
-# Team Details:
-# thupakki
-PBL repository for Team Thupakki
- Microconroller: Nuvoton ms51fb9ae
+**Project:** Educational Microcontroller Simulator with Process Scheduling  
+**Processor:** Nuvoton MS51FB9AE  
+**Language:** Java
 
-Team : Thupakki 
-Team Details:
-    1.Aaron Kenneth Dsouza (Team Lead)
-    2. Aman Dsilva
-    3. Alwisha Sweedal Tauro
-    4. Georgie Shibu
+## Team
+1. Aaron Kenneth Dsouza — Team Lead
+2. Aman Dsilva
+3. Alwisha Sweedal Tauro
+4. Georgie Shibu
 
+## Week 3 objective
+Enhance the Week 2 simulator with Memory, Stack and FIFO Queue functionality and validate
+the queue using a flowchart, processor-specific assembly program and documented tests.
 
-# Project Title: 
-Educational Microcontroller Simulator with Process Scheduling (Nuvoton MS51FB9AE)
+## Structure
+```text
+src/
+  CPU.java
+  FIFOQueue.java
+  Instruction.java
+  Main.java
+  Memory.java
+  Simulator.java
+  SimulatorUI.java
+  StackMemory.java
+tests/
+  SimulatorTests.java
+programs/
+  queue_validation.asm
+docs/
+  week3_design.md
+  week3_queue_flowchart.md
+  week3_test_results.md
+  week3_status.md
+```
 
+## Compile
+```bash
+javac -d out src/*.java
+javac -cp out -d out tests/SimulatorTests.java
+```
 
-# Project Objective:
+## Run tests
+```bash
+java -cp out SimulatorTests
+```
 
-Build a simplified educational microcontroller simulator for the Nuvoton MS51FB9AE that
-demonstrates instruction execution, memory and peripheral operations, and process management —
-integrating Microprocessor Architecture, Data Structures, and Operating Systems concepts into
-one working system, so users can visualize how programs run and how CPU scheduling manages
-multiple programs.
+## Run console demonstration
+```bash
+java -cp out simulator.Main
+```
 
-# Project Statement:
+## Run GUI
+```bash
+java -cp out simulator.SimulatorUI
+```
 
-Design and implement a software-based simulator for the assigned 8-bit microcontroller
-(Nuvoton MS51FB9AE). The simulator models the essential processor components, executes a
-defined subset of its instructions, and manages program memory, data memory, and stack, while
-providing simplified GPIO, timer, and interrupt functionality. It also supports multiple
-programs as processes using appropriate data structures — a Process Control Block (PCB), ready
-queue, and context switching — implementing FCFS, Round Robin, and Priority CPU scheduling
-algorithms.
-
-# project Scope:
-
-# Team responsibilities:
-
-# Selected Programming language:
-Java has been chosen as the programming language for developing the project . Primary Reason: Java is in the syllabus for this semester 
-Reason2: Java features support the development scope of this project 
-
-# Initial System Architecture:
-
-# Initial development Plan:
-
+## Important
+The assembly file is an 8051-family style validation program for the assigned Nuvoton processor.
+Before submitting, verify the exact syntax against the assembler/toolchain used by the team.
