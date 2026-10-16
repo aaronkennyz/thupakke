@@ -1,52 +1,128 @@
-package simulator;
-
 import javax.swing.*;
 import java.awt.*;
+import java.nio.file.*;
 
 public class SimulatorUI extends JFrame {
     private final Simulator simulator = new Simulator();
-    private final JTextArea trace = new JTextArea();
-    private final JLabel state = new JLabel();
+
+    private final JTextArea programArea = new JTextArea();
+    private final JTextArea stateArea = new JTextArea();
+    private final JTextArea traceArea = new JTextArea();
 
     public SimulatorUI() {
-        setTitle("Thupakki - MS51FB9AE Simulator | Week 3");
-        setSize(850, 600);
+        setTitle("Nuvoton MS51FB9AE Educational Simulator");
+        setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(8, 8));
+        setLocationRelativeTo(null);
 
-        JPanel buttons = new JPanel();
-        JButton load = new JButton("Load Demo");
+        programArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        stateArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        traceArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        JButton load = new JButton("Load");
         JButton reset = new JButton("Reset");
         JButton step = new JButton("Step");
         JButton run = new JButton("Run");
-        JButton queue = new JButton("Load Queue Validation");
 
-        buttons.add(load); buttons.add(queue); buttons.add(reset); buttons.add(step); buttons.add(run);
+        buttons.add(load);
+        buttons.add(reset);
+        buttons.add(step);
+        buttons.add(run);
+
+        JPanel center = new JPanel(new GridLayout(1, 2, 10, 10));
+        center.add(new JScrollPane(programArea));
+        center.add(new JScrollPane(stateArea));
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setBorder(BorderFactory.createTitledBorder("Execution Trace"));
+        bottom.add(new JScrollPane(traceArea), BorderLayout.CENTER);
+
         add(buttons, BorderLayout.NORTH);
+        add(center, BorderLayout.CENTER);
+        add(bottom, BorderLayout.SOUTH);
 
-        trace.setEditable(false);
-        trace.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-        add(new JScrollPane(trace), BorderLayout.CENTER);
-        add(state, BorderLayout.SOUTH);
+        load.addActionListener(e -> loadProgram());
+        reset.addActionListener(e -> {
+            simulator.reset();
+            updateState();
+            traceArea.setText("Simulator reset.");
+        });
+        step.addActionListener(e -> {
+            try {
+                traceArea.setText(simulator.step());
+                updateState();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+        run.addActionListener(e -> {
+            try {
+                simulator.run();
+                traceArea.setText(simulator.getCPU().getLastTrace()
+                        + "\n\nProgram finished.");
+                updateState();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
 
-        load.addActionListener(e -> { simulator.loadDemo(); refresh("Demo loaded."); });
-        queue.addActionListener(e -> { simulator.loadQueueValidation(); refresh("Queue validation program loaded."); });
-        reset.addActionListener(e -> { simulator.getCPU().reset(); refresh("Reset."); });
-        step.addActionListener(e -> { simulator.getCPU().step(); refresh(simulator.getCPU().getLastTrace()); });
-        run.addActionListener(e -> { simulator.getCPU().run(); refresh(simulator.getCPU().getLastTrace()); });
+        programArea.setText(
+                "; Load programs/demo.asm using the Load button.\n" +
+                "; Example:\n" +
+                "MOV A, #05H\n" +
+                "MOV R0, #03H\n" +
+                "ADD A, R0\n" +
+                "INC A\n" +
+                "RET\n"
+        );
+        updateState();
     }
 
-    private void refresh(String message) {
-        CPU c = simulator.getCPU();
-        trace.setText(message + "\n\n" +
-            "MEMORY [00-1F]\n" + c.getMemory().dump(0, 31) + "\n" +
-            "STACK SP=" + c.getStack().getSP() + "  " + c.getStack().display() + "\n" +
-            "QUEUE front=" + c.getQueue().getFrontIndex() +
-            " rear=" + c.getQueue().getRearIndex() +
-            " size=" + c.getQueue().size() + "  " + c.getQueue().display());
-        state.setText(String.format("PC=%02X   A=%02X   R0=%02X R1=%02X R2=%02X   Z=%s C=%s   Halted=%s",
-            c.getPC(), c.getAccumulator(), c.getRegisters()[0], c.getRegisters()[1],
-            c.getRegisters()[2], c.isZeroFlag(), c.isCarryFlag(), c.isHalted()));
+    private void loadProgram() {
+        JFileChooser chooser = new JFileChooser("programs");
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try {
+                Path path = chooser.getSelectedFile().toPath();
+                simulator.loadProgram(path);
+                programArea.setText(Files.readString(path));
+                updateState();
+                traceArea.setText("Program loaded: " + path.getFileName());
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        }
+    }
+
+    private void updateState() {
+        var c = simulator.getCPU();
+        StringBuilder s = new StringBuilder();
+
+        s.append("CPU STATE\n");
+        s.append("---------\n");
+        s.append(String.format("PC = %02X%n", c.getPC()));
+        s.append(String.format("SP = %02X%n", c.getSP()));
+        s.append(String.format("A  = %02X%n", c.getA()));
+
+        for (int i = 0; i < 8; i++) {
+            s.append(String.format("R%d = %02X%n", i, c.getR(i)));
+        }
+
+        s.append("\nFLAGS\n");
+        s.append("-----\n");
+        s.append("C = ").append(c.isCarry() ? 1 : 0).append("\n");
+        s.append("Z = ").append(c.isZero() ? 1 : 0).append("\n");
+
+        s.append("\nSTATUS\n");
+        s.append("------\n");
+        s.append(c.isHalted() ? "TERMINATED" : "RUNNING/READY");
+
+        stateArea.setText(s.toString());
+    }
+
+    private void showError(Exception ex) {
+        traceArea.setText("ERROR: " + ex.getMessage());
     }
 
     public static void main(String[] args) {
