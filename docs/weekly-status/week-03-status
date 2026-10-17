@@ -1,0 +1,26 @@
+# Week 3 Status — Enhancing Simulator Functionality
+## Planned
+Enhance the existing CPU simulator by implementing Memory, Stack, and FIFO Queue functionalities.
+## Completed
+- CPU simulator foundation from Week 2
+- CPU state and register management
+- Program memory representation
+- FETCH → DECODE → EXECUTE cycle
+- Basic instruction execution and UI controls
+## Pending
+- Memory Read/Write operations
+- Integration of memory with the simulator
+- Memory contents displayed in the UI
+- Stack Pointer (SP) implementation and display
+- Stack PUSH/POP operations
+- Stack visualization in the UI
+- FIFO Queue Enqueue/Dequeue operations
+- Queue full/empty condition handling
+- Queue status and contents displayed in the UI
+- Queue flowchart
+- MS51-specific Assembly program for queue validation
+- Expected vs. actual result verification
+- Memory, Stack, and Queue test cases
+- Updated design documentation and test results
+## Carry Forward
+Week 4: Multi-Process Simulator and Inter-Process Communication (IPC).
