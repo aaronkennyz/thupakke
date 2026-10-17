@@ -4,10 +4,19 @@ import java.nio.file.*;
 
 public class SimulatorUI extends JFrame {
     private final Simulator simulator = new Simulator();
+    private final JTextArea trace = new JTextArea();
+    private final JLabel state = new JLabel();
+    private final javax.swing.table.DefaultTableModel memoryModel =
+    new javax.swing.table.DefaultTableModel(
+        new String[]{"Address", "Value"}, 0
+    ) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
 
-    private final JTextArea programArea = new JTextArea();
-    private final JTextArea stateArea = new JTextArea();
-    private final JTextArea traceArea = new JTextArea();
+private final JTable memoryTable = new JTable(memoryModel);
 
     public SimulatorUI() {
         setTitle("Nuvoton MS51FB9AE Educational Simulator");
@@ -114,15 +123,58 @@ public class SimulatorUI extends JFrame {
         s.append("C = ").append(c.isCarry() ? 1 : 0).append("\n");
         s.append("Z = ").append(c.isZero() ? 1 : 0).append("\n");
 
-        s.append("\nSTATUS\n");
-        s.append("------\n");
-        s.append(c.isHalted() ? "TERMINATED" : "RUNNING/READY");
+        trace.setEditable(false);
+        trace.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        JPanel center = new JPanel(new GridLayout(1, 2, 8, 8));
+
+JScrollPane traceScroll = new JScrollPane(trace);
+traceScroll.setBorder(
+    BorderFactory.createTitledBorder("Execution Trace")
+);
+
+memoryTable.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+memoryTable.setRowHeight(22);
+memoryTable.getTableHeader().setReorderingAllowed(false);
+
+JScrollPane memoryScroll = new JScrollPane(memoryTable);
+memoryScroll.setBorder(
+    BorderFactory.createTitledBorder("Memory Viewer")
+);
+
+center.add(traceScroll);
+center.add(memoryScroll);
+
+add(center, BorderLayout.CENTER);
+        add(state, BorderLayout.SOUTH);
 
         stateArea.setText(s.toString());
     }
+ 
+    private void refreshMemoryTable() {
+    memoryModel.setRowCount(0);
 
-    private void showError(Exception ex) {
-        traceArea.setText("ERROR: " + ex.getMessage());
+    Memory memory = simulator.getCPU().getMemory();
+
+    for (int address = 0; address < memory.size(); address++) {
+        memoryModel.addRow(new Object[]{
+            String.format("%02X", address),
+            String.format("%02X", memory.read(address))
+        });
+    }
+}
+
+    private void refresh(String message) {
+        CPU c = simulator.getCPU();
+        trace.setText(message + "\n\n" +
+            "MEMORY [00-1F]\n" + c.getMemory().dump(0, 31) + "\n" +
+            "STACK SP=" + c.getStack().getSP() + "  " + c.getStack().display() + "\n" +
+            "QUEUE front=" + c.getQueue().getFrontIndex() +
+            " rear=" + c.getQueue().getRearIndex() +
+            " size=" + c.getQueue().size() + "  " + c.getQueue().display());
+        state.setText(String.format("PC=%02X   A=%02X   R0=%02X R1=%02X R2=%02X   Z=%s C=%s   Halted=%s",
+            c.getPC(), c.getAccumulator(), c.getRegisters()[0], c.getRegisters()[1],
+            c.getRegisters()[2], c.isZeroFlag(), c.isCarryFlag(), c.isHalted()));
+            refreshMemoryTable();
     }
 
     public static void main(String[] args) {
