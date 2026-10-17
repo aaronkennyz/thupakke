@@ -1,5 +1,3 @@
-package simulator;
-
 public class Memory {
     private final int[] data;
 
@@ -7,38 +5,27 @@ public class Memory {
         data = new int[size];
     }
 
-    public void reset() {
-        for (int i = 0; i < data.length; i++) data[i] = 0;
+    public int read(int address) {
+        check(address);
+        return data[address] & 0xFF;
     }
 
     public void write(int address, int value) {
-        checkAddress(address);
+        check(address);
         data[address] = value & 0xFF;
-    }
-
-    public int read(int address) {
-        checkAddress(address);
-        return data[address];
     }
 
     public int size() {
         return data.length;
     }
 
-    private void checkAddress(int address) {
-        if (address < 0 || address >= data.length)
-            throw new IllegalArgumentException("Invalid memory address: " + address);
+    public void reset() {
+        java.util.Arrays.fill(data, 0);
     }
 
-    public String dump(int start, int end) {
-        checkAddress(start);
-        checkAddress(end);
-        if (start > end) throw new IllegalArgumentException("Start > end");
-        StringBuilder s = new StringBuilder();
-        for (int i = start; i <= end; i++) {
-            s.append(String.format("[%02X]=%02X  ", i, data[i]));
-            if ((i - start + 1) % 8 == 0) s.append('\n');
+    private void check(int address) {
+        if (address < 0 || address >= data.length) {
+            throw new IllegalArgumentException("Invalid memory address: " + address);
         }
-        return s.toString();
     }
 }

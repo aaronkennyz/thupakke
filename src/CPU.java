@@ -1,33 +1,24 @@
-package simulator;
-
 import java.util.*;
 
 public class CPU {
-    private final Memory memory = new Memory(256);
-    private final StackMemory stack = new StackMemory(16);
-    private final FIFOQueue queue = new FIFOQueue(8);
-    private final int[] registers = new int[8];
-
-    private List<Instruction> program = new ArrayList<>();
-    private int pc = 0;
-    private int accumulator = 0;
-    private boolean zeroFlag = false;
-    private boolean carryFlag = false;
+    // Simplified 8051/MS51 state used by this educational simulator.
+    private int A = 0;                 // Accumulator
+    private final int[] R = new int[8];
+    private int PC = 0;                // Program Counter
+    private int SP = 7;                // 8051 reset-style starting SP
+    private boolean carry = false;
+    private boolean zero = false;
     private boolean halted = false;
 
-    private Instruction current;
-    private String lastTrace = "No instruction executed.";
+    private List<Instruction> program = new ArrayList<>();
+    private final Memory memory;
 
-    public Memory getMemory() { return memory; }
-    public StackMemory getStack() { return stack; }
-    public FIFOQueue getQueue() { return queue; }
-    public int[] getRegisters() { return registers.clone(); }
-    public int getPC() { return pc; }
-    public int getAccumulator() { return accumulator; }
-    public boolean isZeroFlag() { return zeroFlag; }
-    public boolean isCarryFlag() { return carryFlag; }
-    public boolean isHalted() { return halted; }
-    public String getLastTrace() { return lastTrace; }
+    private String lastTrace = "";
+
+    public CPU(Memory memory) {
+        this.memory = memory;
+        reset();
+    }
 
     public void loadProgram(List<Instruction> instructions) {
         program = new ArrayList<>(instructions);
@@ -35,135 +26,243 @@ public class CPU {
     }
 
     public void reset() {
-        pc = 0;
-        accumulator = 0;
-        zeroFlag = false;
-        carryFlag = false;
+        A = 0;
+        Arrays.fill(R, 0);
+        PC = 0;
+        SP = 7;
+        carry = false;
+        zero = false;
         halted = false;
-        current = null;
-        lastTrace = "CPU reset.";
-        Arrays.fill(registers, 0);
-        memory.reset();
-        stack.reset();
-        queue.reset();
+        lastTrace = "";
     }
 
-    public void fetch() {
-        if (halted) return;
-        if (pc < 0 || pc >= program.size())
-            throw new IllegalStateException("PC outside program.");
-        current = program.get(pc);
+    public boolean isHalted() {
+        return halted;
     }
 
-    public void decode() {
-        if (current == null) throw new IllegalStateException("Nothing fetched.");
+    public int getA() {
+        return A;
     }
 
-    public void execute() {
-        if (current == null) throw new IllegalStateException("Nothing decoded.");
+    public int getR(int index) {
+        return R[index];
+    }
 
-        int oldPC = pc;
-        String op = current.getOpcode();
+    public int getPC() {
+        return PC;
+    }
+
+    public int getSP() {
+        return SP;
+    }
+
+    public boolean isCarry() {
+        return carry;
+    }
+
+    public boolean isZero() {
+        return zero;
+    }
+
+    public String getLastTrace() {
+        return lastTrace;
+    }
+
+    public String step() {
+        if (halted) {
+            lastTrace = "Program already terminated.";
+            return lastTrace;
+        }
+
+        if (PC < 0 || PC >= program.size()) {
+            halted = true;
+            lastTrace = "Program Counter outside program. Program terminated.";
+            return lastTrace;
+        }
+
+        // FETCH
+        Instruction instruction = fetch();
+
+        // DECODE
+        String decoded = decode(instruction);
+
+        // EXECUTE
+        String result = execute(instruction);
+
+        lastTrace = "FETCH  ✓  PC=" + String.format("%02X", instruction.address)
+                + "\nDECODE ✓  " + decoded
+                + "\nEXECUTE ✓  " + result
+                + "\nSTATE  A=" + hex(A)
+                + "  R0=" + hex(R[0])
+                + "  R1=" + hex(R[1])
+                + "  PC=" + String.format("%02X", PC)
+                + "  SP=" + String.format("%02X", SP)
+                + "  C=" + (carry ? 1 : 0)
+                + "  Z=" + (zero ? 1 : 0);
+
+        return lastTrace;
+    }
+
+    public void run(int maxSteps) {
+        int count = 0;
+        while (!halted && count < maxSteps) {
+            step();
+            count++;
+        }
+        if (!halted && count >= maxSteps) {
+            throw new IllegalStateException("Execution stopped after safety limit of " + maxSteps + " steps.");
+        }
+    }
+
+    // FETCH: obtain instruction using PC.
+    private Instruction fetch() {
+        return program.get(PC);
+    }
+
+    // DECODE: identify opcode and operands.
+    private String decode(Instruction instruction) {
+        return instruction.operation + " " + String.join(", ", instruction.operands);
+    }
+
+    // EXECUTE: perform the selected operation.
+    private String execute(Instruction i) {
+        String op = i.operation;
+        String[] x = i.operands;
 
         switch (op) {
             case "MOV":
-                registers[reg(current.getOperand1())] = value(current.getOperand2());
-                pc++;
-                break;
+                return executeMov(x);
             case "ADD":
-                accumulator = (accumulator + value(current.getOperand1())) & 0xFF;
-                updateFlags(accumulator);
-                pc++;
-                break;
-            case "SUB":
-                int v = value(current.getOperand1());
-                carryFlag = accumulator < v;
-                accumulator = (accumulator - v) & 0xFF;
-                updateFlags(accumulator);
-                pc++;
-                break;
+                requireOperands(x, 2);
+                requireAccumulator(x[0]);
+                int oldAdd = A;
+                int addValue = valueOf(x[1]);
+                int sum = A + addValue;
+                carry = sum > 0xFF;
+                A = sum & 0xFF;
+                updateZero();
+                PC++;
+                return "A: " + hex(oldAdd) + " → " + hex(A);
+            case "SUBB":
+                requireOperands(x, 2);
+                requireAccumulator(x[0]);
+                int oldSub = A;
+                int subValue = valueOf(x[1]);
+                int borrow = carry ? 1 : 0;
+                int diff = A - subValue - borrow;
+                carry = diff < 0;
+                A = diff & 0xFF;
+                updateZero();
+                PC++;
+                return "A: " + hex(oldSub) + " → " + hex(A);
+            case "ANL":
+                requireOperands(x, 2);
+                requireAccumulator(x[0]);
+                int oldAnd = A;
+                A = A & valueOf(x[1]);
+                updateZero();
+                PC++;
+                return "A: " + hex(oldAnd) + " → " + hex(A);
             case "INC":
-                int r = reg(current.getOperand1());
-                registers[r] = (registers[r] + 1) & 0xFF;
-                updateFlags(registers[r]);
-                pc++;
-                break;
-            case "AND":
-                accumulator &= value(current.getOperand1());
-                updateFlags(accumulator);
-                pc++;
-                break;
-            case "LOAD":
-                accumulator = memory.read(parseNumber(current.getOperand1()));
-                updateFlags(accumulator);
-                pc++;
-                break;
-            case "STORE":
-                memory.write(parseNumber(current.getOperand1()), accumulator);
-                pc++;
-                break;
-            case "PUSH":
-                stack.push(value(current.getOperand1()));
-                pc++;
-                break;
-            case "POP":
-                registers[reg(current.getOperand1())] = stack.pop();
-                pc++;
-                break;
-            case "ENQ":
-                queue.enqueue(value(current.getOperand1()));
-                pc++;
-                break;
-            case "DEQ":
-                accumulator = queue.dequeue();
-                updateFlags(accumulator);
-                pc++;
-                break;
-            case "JMP":
-                pc = parseNumber(current.getOperand1());
-                break;
-            case "HALT":
+                requireOperands(x, 1);
+                if (x[0].equalsIgnoreCase("A")) {
+                    int old = A;
+                    A = (A + 1) & 0xFF;
+                    updateZero();
+                    PC++;
+                    return "A: " + hex(old) + " → " + hex(A);
+                }
+                int r = registerIndex(x[0]);
+                int oldR = R[r];
+                R[r] = (R[r] + 1) & 0xFF;
+                updateZero();
+                PC++;
+                return x[0].toUpperCase() + ": " + hex(oldR) + " → " + hex(R[r]);
+            case "JZ":
+                requireOperands(x, 1);
+                int oldPc = PC;
+                int offset = Integer.parseInt(x[0]);
+                if (zero) {
+                    PC = PC + offset;
+                } else {
+                    PC++;
+                }
+                return "PC: " + oldPc + " → " + PC;
+            case "RET":
+                // For the educational top-level simulator, RET terminates the demo program.
                 halted = true;
-                break;
+                PC++;
+                return "Program terminated by RET.";
             default:
-                throw new IllegalArgumentException("Unsupported opcode: " + op);
+                throw new IllegalArgumentException("Unsupported instruction: " + op);
+        }
+    }
+
+    private String executeMov(String[] x) {
+        requireOperands(x, 2);
+        String dest = x[0].toUpperCase();
+        int value;
+
+        if (dest.equals("A")) {
+            value = valueOf(x[1]);
+            int old = A;
+            A = value;
+            updateZero();
+            PC++;
+            return "A: " + hex(old) + " → " + hex(A);
         }
 
-        lastTrace = String.format(
-            "Instruction: %s%nFETCH ✓%nDECODE ✓%nEXECUTE ✓%nPC: %02X -> %02X%nCPU: A=%02X R0=%02X R1=%02X R2=%02X Z=%s C=%s",
-            current, oldPC, pc, accumulator, registers[0], registers[1], registers[2],
-            zeroFlag, carryFlag);
-        current = null;
+        int r = registerIndex(dest);
+        value = valueOf(x[1]);
+        int old = R[r];
+        R[r] = value;
+        updateZero();
+        PC++;
+        return dest + ": " + hex(old) + " → " + hex(R[r]);
     }
 
-    public void step() {
-        if (halted) return;
-        fetch();
-        decode();
-        execute();
+    private int valueOf(String token) {
+        token = token.trim();
+        if (token.startsWith("#")) token = token.substring(1);
+
+        if (token.startsWith("0x") || token.startsWith("0X")) {
+            return Integer.parseInt(token.substring(2), 16) & 0xFF;
+        }
+        if (token.endsWith("H") || token.endsWith("h")) {
+            return Integer.parseInt(token.substring(0, token.length() - 1), 16) & 0xFF;
+        }
+        if (token.matches("\\d+")) {
+            return Integer.parseInt(token) & 0xFF;
+        }
+
+        if (token.equalsIgnoreCase("A")) return A;
+        return R[registerIndex(token)];
     }
 
-    public void run() {
-        int guard = 10000;
-        while (!halted && guard-- > 0) step();
-        if (!halted) throw new IllegalStateException("Execution guard reached.");
+    private int registerIndex(String token) {
+        if (!token.matches("(?i)R[0-7]")) {
+            throw new IllegalArgumentException("Expected R0-R7 but got: " + token);
+        }
+        return Integer.parseInt(token.substring(1));
     }
 
-    private void updateFlags(int x) { zeroFlag = (x & 0xFF) == 0; }
-    private int reg(String s) {
-        if (!s.matches("R[0-7]")) throw new IllegalArgumentException("Register required: " + s);
-        return Integer.parseInt(s.substring(1));
+    private void requireAccumulator(String token) {
+        if (!token.equalsIgnoreCase("A")) {
+            throw new IllegalArgumentException("This simulator currently requires A as destination.");
+        }
     }
 
-    private int value(String s) {
-        if (s.startsWith("#")) return parseNumber(s.substring(1));
-        if (s.matches("R[0-7]")) return registers[reg(s)];
-        return parseNumber(s);
+    private void requireOperands(String[] x, int n) {
+        if (x.length != n) {
+            throw new IllegalArgumentException("Expected " + n + " operands.");
+        }
     }
 
-    public static int parseNumber(String s) {
-        s = s.trim().toUpperCase();
-        if (s.endsWith("H")) return Integer.parseInt(s.substring(0, s.length()-1), 16);
-        return Integer.parseInt(s);
+    private void updateZero() {
+        zero = A == 0;
+    }
+
+    private String hex(int n) {
+        return String.format("%02X", n & 0xFF);
     }
 }
