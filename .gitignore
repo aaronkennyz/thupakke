@@ -1,8 +1,4 @@
 out/
 *.class
-.idea/
-.vscode/
-*.iml
-.DS_Store
-Thumbs.db
-.honest
+logs/*.log
+!logs/.gitkeep
