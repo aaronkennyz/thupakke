@@ -1,45 +1,71 @@
+
+import simulator.CPU;
+import simulator.Instruction;
+import java.util.Arrays;
+
 public class SimulatorTests {
+
     private static void check(boolean condition, String message) {
-        if (!condition) throw new AssertionError(message);
+        if (!condition) {
+            throw new AssertionError(message);
+        }
     }
 
     public static void main(String[] args) {
         testArithmetic();
         testLogical();
         testTermination();
+
         System.out.println("ALL TESTS PASSED");
     }
 
     private static void testArithmetic() {
-        Simulator s = new Simulator();
-        s.loadProgramText(
-            "MOV A, #05H\n" +
-            "MOV R0, #03H\n" +
-            "ADD A, R0\n" +
-            "INC A\n" +
-            "RET\n"
-        );
+        CPU cpu = new CPU();
 
-        s.run();
-        check(s.getCPU().getA() == 9, "Expected A=09H");
+        cpu.loadProgram(Arrays.asList(
+            new Instruction("ADD", "#05H", ""),
+            new Instruction("ADD", "#03H", ""),
+            new Instruction("HALT", "", "")
+        ));
+
+        cpu.run();
+
+        check(cpu.getAccumulator() == 8,
+              "Expected accumulator A=08H");
+
+        System.out.println("Arithmetic test passed");
     }
 
     private static void testLogical() {
-        Simulator s = new Simulator();
-        s.loadProgramText(
-            "MOV A, #0FH\n" +
-            "ANL A, #03H\n" +
-            "RET\n"
-        );
+        CPU cpu = new CPU();
 
-        s.run();
-        check(s.getCPU().getA() == 3, "Expected A=03H");
+        cpu.loadProgram(Arrays.asList(
+            new Instruction("ADD", "#0FH", ""),
+            new Instruction("AND", "#03H", ""),
+            new Instruction("HALT", "", "")
+        ));
+
+        cpu.run();
+
+        check(cpu.getAccumulator() == 3,
+              "Expected accumulator A=03H");
+
+        System.out.println("Logical test passed");
     }
 
     private static void testTermination() {
-        Simulator s = new Simulator();
-        s.loadProgramText("MOV A, #01H\nRET\n");
-        s.run();
-        check(s.getCPU().isHalted(), "Program should terminate.");
+        CPU cpu = new CPU();
+
+        cpu.loadProgram(Arrays.asList(
+            new Instruction("ADD", "#01H", ""),
+            new Instruction("HALT", "", "")
+        ));
+
+        cpu.run();
+
+        check(cpu.isHalted(),
+              "CPU should halt after HALT instruction");
+
+        System.out.println("Termination test passed");
     }
 }
