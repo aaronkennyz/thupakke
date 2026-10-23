@@ -10,6 +10,7 @@ public class CPU {
 
     private List<Instruction> program = new ArrayList<>();
     private int pc = 0;
+    
     private int accumulator = 0;
     private boolean zeroFlag = false;
     private boolean carryFlag = false;
