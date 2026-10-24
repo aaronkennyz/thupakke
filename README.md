@@ -103,9 +103,4 @@ ps -p PID -o pid,comm,%cpu,%mem,rss,etime
 
 ## IPC protocol
 Each command/response is one newline-terminated UTF-8 line. Commands: `STEP`, `RUN`, `RESET`, `LOAD_DEMO`, `LOAD_QUEUE`, `STATUS`, `QUIT`. Unknown commands return an `ERROR` response. This prototype uses three POSIX FIFOs and assumes one UI client at a time.
-
-## Important limitations before submission
-- This uses a **terminal UI process**, not the Week 3 Swing GUI migrated to IPC.
-- `IPCClient` is synchronous; don't call it on a Swing event-dispatch thread. If integrating with Swing, use `SwingWorker` or another background executor.
-- Benchmarks include Java warm-up, FIFO scheduling and logging effects. Report them honestly; they don't isolate IPC cost.
-- The CPU/memory/stack/queue remain the Week 3 educational abstraction, not a complete MS51FB9AE hardware implementation.
+y/stack/queue remain the Week 3 educational abstraction, not a complete MS51FB9AE hardware implementation.
