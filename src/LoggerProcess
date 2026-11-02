@@ -1,0 +1,90 @@
+package simulator;
+
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+/**
+ * Separate logging process.
+ *
+ * Receives newline-delimited events from CoreProcess through a POSIX FIFO
+ * and appends timestamped events to the simulator log file.
+ *
+ * Optional system properties:
+ *   -Dthupakki.ipcDir=/path/to/ipc
+ *   -Dthupakki.logFile=/path/to/simulator.log
+ */
+public final class LoggerProcess {
+
+    static final Path IPC_DIR = Path.of(
+            System.getProperty("thupakki.ipcDir", "/tmp/thupakki-ipc"));
+
+    static final Path LOG_FILE = Path.of(
+            System.getProperty("thupakki.logFile", "logs/simulator.log"));
+
+    static final Path LOG_FIFO = IPC_DIR.resolve("core_to_logger.fifo");
+
+    private static final DateTimeFormatter TIME =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+    private LoggerProcess() {
+        // Utility/process class: prevent object creation.
+    }
+
+    public static void main(String[] args) throws Exception {
+        Files.createDirectories(IPC_DIR);
+
+        Path logParent = LOG_FILE.toAbsolutePath().getParent();
+        if (logParent != null) {
+            Files.createDirectories(logParent);
+        }
+
+        if (!Files.exists(LOG_FIFO)) {
+            throw new IllegalStateException(
+                    "Logging FIFO does not exist: " + LOG_FIFO
+                    + ". Run the project's IPC setup script first.");
+        }
+
+        System.out.println("Logger waiting on " + LOG_FIFO
+                + " ; writing to " + LOG_FILE.toAbsolutePath());
+
+        try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(
+                            Files.newInputStream(LOG_FIFO),
+                            StandardCharsets.UTF_8));
+             PrintWriter out = new PrintWriter(
+                    new FileWriter(
+                            LOG_FILE.toFile(),
+                            StandardCharsets.UTF_8,
+                            true))) {
+
+            String line;
+
+            while ((line = in.readLine()) != null) {
+                if (line.equals("STOP")) {
+                    out.println(stamp()
+                            + " [LOGGER] received STOP; shutting down");
+                    out.flush();
+                    break;
+                }
+
+                out.println(stamp() + " " + line);
+                out.flush();
+
+                System.out.println("logged: " + line);
+            }
+        }
+
+        System.out.println("Logger stopped.");
+    }
+
+    private static String stamp() {
+        return "[" + LocalDateTime.now().format(TIME) + "]";
+    }
+}
