@@ -67,8 +67,8 @@ public class CPU {
         String op = current.getOpcode();
 
         switch (op) {
-            case "MOV":
-                registers[reg(current.getOperand1())] = value(current.getOperand2());
+           case "MOV":
+                 writeOperand(current.getOperand1(), readOperand(current.getOperand2()));
                 pc++;
                 break;
             case "ADD":
@@ -94,6 +94,45 @@ public class CPU {
                 updateFlags(accumulator);
                 pc++;
                 break;
+                case "XOR":
+    accumulator ^= readOperand(current.getOperand1());
+    accumulator &= 0xFF;
+    updateFlags(accumulator);
+    pc++;
+    break;
+
+case "SHL":
+    // Carry receives the old bit 7.
+    carryFlag = (accumulator & 0x80) != 0;
+
+    // Shift accumulator left by one bit.
+    accumulator = (accumulator << 1) & 0xFF;
+
+    updateFlags(accumulator);
+    pc++;
+    break;
+
+case "JNC":
+    // Jump if carry is clear.
+    if (!carryFlag) {
+        pc = parseNumber(current.getOperand1());
+    } else {
+        pc++;
+    }
+    break;
+
+case "DJNZ":
+    int registerIndex = reg(current.getOperand1());
+
+    registers[registerIndex] =
+        (registers[registerIndex] - 1) & 0xFF;
+
+    if (registers[registerIndex] != 0) {
+        pc = parseNumber(current.getOperand2());
+    } else {
+        pc++;
+    }
+    break;    
             case "LOAD":
                 accumulator = memory.read(parseNumber(current.getOperand1()));
                 updateFlags(accumulator);
@@ -167,4 +206,62 @@ public class CPU {
         if (s.endsWith("H")) return Integer.parseInt(s.substring(0, s.length()-1), 16);
         return Integer.parseInt(s);
     }
+private int readOperand(String operand) {
+    operand = operand.trim().toUpperCase();
+
+    // Immediate value: #05H
+    if (operand.startsWith("#")) {
+        return parseNumber(operand.substring(1));
+    }
+
+    // Accumulator
+    if (operand.equals("A")) {
+        return accumulator;
+    }
+
+    // Register
+    if (operand.matches("R[0-7]")) {
+        return registers[reg(operand)];
+    }
+
+    // Indirect memory: @R0 or @R1
+    if (operand.matches("@R[01]")) {
+        int registerIndex = reg(operand.substring(1));
+        int address = registers[registerIndex];
+        return memory.read(address);
+    }
+
+    // Direct memory address
+    return memory.read(parseNumber(operand));
+}
+
+private void writeOperand(String operand, int value) {
+    operand = operand.trim().toUpperCase();
+    value &= 0xFF;
+
+    // Accumulator
+    if (operand.equals("A")) {
+        accumulator = value;
+        updateFlags(accumulator);
+        return;
+    }
+
+    // Register
+    if (operand.matches("R[0-7]")) {
+        registers[reg(operand)] = value;
+        updateFlags(value);
+        return;
+    }
+
+    // Indirect memory: @R0 or @R1
+    if (operand.matches("@R[01]")) {
+        int registerIndex = reg(operand.substring(1));
+        int address = registers[registerIndex];
+        memory.write(address, value);
+        return;
+    }
+
+    // Direct memory address
+    memory.write(parseNumber(operand), value);
+}
 }
