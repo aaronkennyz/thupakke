@@ -11,15 +11,30 @@ public class Instruction {
         this.operand2 = operand2 == null ? "" : operand2.trim().toUpperCase();
     }
 
-    public String getOpcode() { return opcode; }
-    public String getOperand1() { return operand1; }
-    public String getOperand2() { return operand2; }
+    public String getOpcode() {
+        return opcode;
+    }
+
+    public String getOperand1() {
+        return operand1;
+    }
+
+    public String getOperand2() {
+        return operand2;
+    }
 
     @Override
     public String toString() {
         String s = opcode;
-        if (!operand1.isEmpty()) s += " " + operand1;
-        if (!operand2.isEmpty()) s += ", " + operand2;
+
+        if (!operand1.isEmpty()) {
+            s += " " + operand1;
+        }
+
+        if (!operand2.isEmpty()) {
+            s += ", " + operand2;
+        }
+
         return s;
     }
 }
